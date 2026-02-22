@@ -1,0 +1,7 @@
+Flask
+Pillow
+python-docx
+reportlab
+pypdf
+img2pdf
+gunicorn
