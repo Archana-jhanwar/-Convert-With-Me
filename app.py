@@ -6,7 +6,7 @@ from docx import Document
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
-from pypdf import PdfReader, PdfWriter, PdfMerger
+from pypdf import PdfReader, PdfWriter
 import img2pdf
 
 app = Flask(__name__)
@@ -371,4 +371,5 @@ def download_file(filename):
 if __name__ == '__main__':
     app.run()
     print("Starting Flask server...")
+
     app.run(debug=True, host="0.0.0.0", port=5000)
