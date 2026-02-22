@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Convert With Me - Free File Converter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+
+<div class="main-wrapper">
+
+    <header class="header">
+        <div class="logo">
+            <i class="fas fa-magic"></i>
+            <span>Convert With Me</span>
+        </div>
+        <p class="tagline">Convert any file format - Free & Fast</p>
+    </header>
+
+    <main class="main-card">
+
+        <!-- Upload Area -->
+        <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-content">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <h3>Drag & Drop Files Here</h3>
+                    <p>or click to browse</p>
+                </div>
+
+                <!-- Hidden File Input -->
+                <input type="file" id="fileInput" multiple hidden>
+            </div>
+
+            <!-- File Preview -->
+            <div class="file-preview-container" id="filePreviewContainer" style="display:none;">
+                <h4>Selected Files:</h4>
+                <div id="fileList"></div>
+                <button id="clearFiles" class="clear-btn">Clear All</button>
+            </div>
+        </div>
+
+        <!-- Conversion Options -->
+        <div class="options-section">
+            <h3>Select Conversion Format</h3>
+
+            <div class="format-grid">
+                <button class="format-btn selected" data-format="jpg">JPG</button>
+                <button class="format-btn" data-format="png">PNG</button>
+                <button class="format-btn" data-format="webp">WEBP</button>
+                <button class="format-btn" data-format="bmp">BMP</button>
+                <button class="format-btn" data-format="image_to_pdf">Image to PDF</button>
+                <button class="format-btn" data-format="docx_to_pdf">DOCX to PDF</button>
+                <button class="format-btn" data-format="pdf_to_docx">PDF to DOCX</button>
+                <button class="format-btn" data-format="merge_pdfs">Merge PDFs</button>
+                <button class="format-btn" data-format="split_pdf">Split PDF</button>
+                <button class="format-btn" data-format="txt_to_pdf">TXT to PDF</button>
+            </div>
+        </div>
+
+        <!-- Convert Button -->
+        <div class="action-section">
+            <button class="convert-btn" id="convertBtn" disabled>
+                Convert Files
+            </button>
+        </div>
+
+        <!-- Result Section -->
+        <div class="result-section" id="resultSection" style="display:none;">
+            <h3>Conversion Complete</h3>
+            <div id="resultContent"></div>
+        </div>
+
+    </main>
+</div>
+
+<!-- ================= JAVASCRIPT ================= -->
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const uploadArea = document.getElementById("uploadArea");
+    const fileInput = document.getElementById("fileInput");
+    const convertBtn = document.getElementById("convertBtn");
+    const formatButtons = document.querySelectorAll(".format-btn");
+    const filePreviewContainer = document.getElementById("filePreviewContainer");
+    const fileList = document.getElementById("fileList");
+    const clearFiles = document.getElementById("clearFiles");
+    const resultSection = document.getElementById("resultSection");
+    const resultContent = document.getElementById("resultContent");
+
+    let selectedFormat = "jpg";
+    let selectedFiles = [];
+
+    // ================= FORMAT SELECT =================
+    formatButtons.forEach(btn => {
+        btn.addEventListener("click", function () {
+            formatButtons.forEach(b => b.classList.remove("selected"));
+            this.classList.add("selected");
+            selectedFormat = this.dataset.format;
+        });
+    });
+
+    // ================= CLICK TO BROWSE (FIXED) =================
+    uploadArea.addEventListener("click", function () {
+        fileInput.click();
+    });
+
+    // ================= DRAG EVENTS =================
+    uploadArea.addEventListener("dragover", function (e) {
+        e.preventDefault();
+        uploadArea.classList.add("dragover");
+    });
+
+    uploadArea.addEventListener("dragleave", function () {
+        uploadArea.classList.remove("dragover");
+    });
+
+    uploadArea.addEventListener("drop", function (e) {
+        e.preventDefault();
+        uploadArea.classList.remove("dragover");
+        fileInput.files = e.dataTransfer.files;
+        selectedFiles = Array.from(e.dataTransfer.files);
+        showFiles();
+    });
+
+    // ================= FILE SELECT =================
+    fileInput.addEventListener("change", function () {
+        selectedFiles = Array.from(this.files);
+        showFiles();
+    });
+
+    function showFiles() {
+        if (selectedFiles.length === 0) {
+            filePreviewContainer.style.display = "none";
+            convertBtn.disabled = true;
+            return;
+        }
+
+        filePreviewContainer.style.display = "block";
+        fileList.innerHTML = "";
+
+        selectedFiles.forEach(file => {
+            const div = document.createElement("div");
+            div.className = "file-item";
+            div.textContent = file.name;
+            fileList.appendChild(div);
+        });
+
+        convertBtn.disabled = false;
+    }
+
+    // ================= CLEAR =================
+    clearFiles.addEventListener("click", function () {
+        selectedFiles = [];
+        fileInput.value = "";
+        showFiles();
+    });
+
+    // ================= CONVERT =================
+    convertBtn.addEventListener("click", function () {
+
+        if (!fileInput.files.length) {
+            alert("Please select files first");
+            return;
+        }
+
+        const formData = new FormData();
+
+        for (let file of fileInput.files) {
+            formData.append("files[]", file);
+        }
+
+        formData.append("conversionType", selectedFormat);
+
+        convertBtn.disabled = true;
+
+        fetch("/upload", {
+            method: "POST",
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+
+            convertBtn.disabled = false;
+
+            if (data.success) {
+
+                resultSection.style.display = "block";
+                resultContent.innerHTML = "";
+
+                if (data.downloadUrl) {
+                    resultContent.innerHTML =
+                        `<a href="${data.downloadUrl}" class="download-btn">Download File</a>`;
+                }
+
+                if (data.downloadUrls) {
+                    data.downloadUrls.forEach(url => {
+                        resultContent.innerHTML +=
+                            `<a href="${url}" class="download-btn">Download</a><br>`;
+                    });
+                }
+
+            } else {
+                alert(data.message);
+            }
+
+        })
+        .catch(err => {
+            convertBtn.disabled = false;
+            alert("Error occurred");
+            console.error(err);
+        });
+    });
+
+});
+</script>
+
+</body>
+</html>
