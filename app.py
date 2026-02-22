@@ -96,14 +96,18 @@ def pdf_to_docx(input_path, output_path):
         return True, None
     except Exception as e:
         return False, str(e)
-
 def merge_pdfs(input_paths, output_path):
     try:
-        merger = PdfMerger()
+        writer = PdfWriter()
+
         for pdf_path in input_paths:
-            merger.append(pdf_path)
-        merger.write(output_path)
-        merger.close()
+            reader = PdfReader(pdf_path)
+            for page in reader.pages:
+                writer.add_page(page)
+
+        with open(output_path, "wb") as f:
+            writer.write(f)
+
         return True, None
     except Exception as e:
         return False, str(e)
@@ -373,3 +377,4 @@ if __name__ == '__main__':
     print("Starting Flask server...")
 
     app.run(debug=True, host="0.0.0.0", port=5000)
+
